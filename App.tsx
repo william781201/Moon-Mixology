@@ -134,7 +134,7 @@ const App: React.FC = () => {
             <Martini className="w-4 h-4 text-pink-500 mr-2" />
             <span className="text-[10px] uppercase tracking-[0.3em] text-slate-400">AI Mixology Experience</span>
           </div>
-          <h1 className="text-5xl md:text-7xl font-bold mb-4 serif bg-gradient-to-b from-white to-slate-500 bg-clip-text text-transparent">
+          <h1 className="text-4xl md:text-7xl font-bold mb-4 serif bg-gradient-to-b from-white to-slate-500 bg-clip-text text-transparent">
             Mood Mixology
           </h1>
           <p className="text-slate-400 max-w-md mx-auto text-sm font-light leading-relaxed">
@@ -143,10 +143,10 @@ const App: React.FC = () => {
         </header>
 
         <div className="flex justify-center mb-8">
-          <div className="inline-flex bg-white/5 p-1 rounded-full border border-white/10">
+          <div className="inline-flex bg-white/5 p-1 rounded-2xl border border-white/10 flex-wrap justify-center gap-1">
             <button
               onClick={() => setActiveTab('create')}
-              className={`flex items-center px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${
+              className={`flex items-center px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
                 activeTab === 'create' 
                   ? 'bg-pink-500/20 text-pink-300 shadow-lg shadow-pink-500/10' 
                   : 'text-slate-400 hover:text-slate-200'
@@ -157,7 +157,7 @@ const App: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveTab('gallery')}
-              className={`flex items-center px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${
+              className={`flex items-center px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
                 activeTab === 'gallery' 
                   ? 'bg-cyan-500/20 text-cyan-300 shadow-lg shadow-cyan-500/10' 
                   : 'text-slate-400 hover:text-slate-200'
@@ -168,7 +168,7 @@ const App: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveTab('community')}
-              className={`flex items-center px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${
+              className={`flex items-center px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
                 activeTab === 'community' 
                   ? 'bg-purple-500/20 text-purple-300 shadow-lg shadow-purple-500/10' 
                   : 'text-slate-400 hover:text-slate-200'
