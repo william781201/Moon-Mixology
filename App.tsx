@@ -7,11 +7,14 @@ import CocktailDisplay from './components/CocktailDisplay';
 import LoadingScreen from './components/LoadingScreen';
 import { AuthButton } from './components/AuthButton';
 import { Gallery } from './components/Gallery';
-import { Martini, Sparkles, BookOpen } from 'lucide-react';
+import { CommunityFeed } from './components/CommunityFeed';
+import { Martini, Sparkles, BookOpen, Users, Key } from 'lucide-react';
 import { auth, db } from './firebase';
 import { doc, getDocFromServer } from 'firebase/firestore';
 
 const App: React.FC = () => {
+  const [hasKey, setHasKey] = useState(false);
+
   useEffect(() => {
     async function testConnection() {
       try {
@@ -23,8 +26,31 @@ const App: React.FC = () => {
       }
     }
     testConnection();
+
+    const checkKey = async () => {
+      // @ts-ignore
+      if (window.aistudio) {
+        // @ts-ignore
+        if (await window.aistudio.hasSelectedApiKey()) {
+          setHasKey(true);
+        }
+      } else if (process.env.GEMINI_API_KEY) {
+        setHasKey(true);
+      }
+    };
+    checkKey();
   }, []);
-  const [activeTab, setActiveTab] = useState<'create' | 'gallery'>('create');
+
+  const handleSelectKey = async () => {
+    // @ts-ignore
+    if (window.aistudio) {
+      // @ts-ignore
+      await window.aistudio.openSelectKey();
+      setHasKey(true);
+    }
+  };
+
+  const [activeTab, setActiveTab] = useState<'create' | 'gallery' | 'community'>('create');
   const [step, setStep] = useState<Step>(Step.SELECTION);
   const [selections, setSelections] = useState<UserSelections>({
     ingredients: [],
@@ -57,7 +83,39 @@ const App: React.FC = () => {
   const handleReset = () => {
     setStep(Step.SELECTION);
     setCocktail(null);
+    setSelections({
+      ingredients: [],
+      mood: '',
+      flavor: '',
+      visualStyle: 'studio',
+      glassType: '',
+      icePreference: '',
+      isNonAlcoholic: false,
+      isCVS: false,
+    });
   };
+
+  if (!hasKey) {
+    return (
+      <div className="min-h-screen bg-[#020617] text-slate-100 flex items-center justify-center p-4">
+        <div className="bg-slate-800/50 border border-white/10 rounded-3xl p-8 max-w-md w-full text-center shadow-2xl">
+          <div className="w-16 h-16 bg-pink-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Key className="w-8 h-8 text-pink-400" />
+          </div>
+          <h1 className="text-2xl font-bold mb-4 serif">需要 API Key</h1>
+          <p className="text-slate-400 mb-8 leading-relaxed">
+            為了提供更快速、更高品質的調酒圖片生成體驗，我們升級了 AI 模型。請選擇您的 Gemini API Key 以繼續使用。
+          </p>
+          <button 
+            onClick={handleSelectKey}
+            className="w-full py-4 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 rounded-xl font-bold text-white shadow-lg shadow-pink-500/25 transition-all active:scale-95"
+          >
+            選擇 API Key
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-100 selection:bg-pink-500/30 overflow-x-hidden">
@@ -108,6 +166,17 @@ const App: React.FC = () => {
               <BookOpen className="w-4 h-4 mr-2" />
               我的酒譜
             </button>
+            <button
+              onClick={() => setActiveTab('community')}
+              className={`flex items-center px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${
+                activeTab === 'community' 
+                  ? 'bg-purple-500/20 text-purple-300 shadow-lg shadow-purple-500/10' 
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Users className="w-4 h-4 mr-2" />
+              社群大廳
+            </button>
           </div>
         </div>
 
@@ -117,15 +186,15 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'create' ? (
+        {activeTab === 'create' && (
           <>
             {step === Step.SELECTION && <SelectionPanel selections={selections} setSelections={setSelections} onGenerate={handleGenerate} />}
             {step === Step.GENERATING && <LoadingScreen />}
             {step === Step.RESULT && cocktail && <CocktailDisplay cocktail={cocktail} onReset={handleReset} />}
           </>
-        ) : (
-          <Gallery />
         )}
+        {activeTab === 'gallery' && <Gallery />}
+        {activeTab === 'community' && <CommunityFeed />}
       </div>
     </div>
   );

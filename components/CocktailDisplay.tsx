@@ -1,10 +1,11 @@
 
 import React, { useEffect, useState } from 'react';
 import { GeneratedCocktail } from '../types';
-import { RefreshCcw, Share2, Wine, List, ScrollText, Sparkles, Check, Loader2, Bookmark, BookmarkCheck, ArrowLeft } from 'lucide-react';
+import { RefreshCcw, Share2, Wine, List, ScrollText, Sparkles, Check, Loader2, Bookmark, BookmarkCheck, ArrowLeft, Globe } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { auth, db } from '../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { PublishModal } from './PublishModal';
 
 enum OperationType {
   CREATE = 'create',
@@ -98,6 +99,8 @@ const CocktailDisplay: React.FC<CocktailDisplayProps> = ({ cocktail, onReset, on
   const [isSharing, setIsSharing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [isPublished, setIsPublished] = useState(false);
   
   useEffect(() => {
     // Scroll to top when result is displayed
@@ -266,6 +269,7 @@ const CocktailDisplay: React.FC<CocktailDisplayProps> = ({ cocktail, onReset, on
                 src={cocktail.imageUrl} 
                 alt={cocktail.name} 
                 className="w-full h-full object-cover transition-transform duration-1000 hover:scale-105"
+                referrerPolicy="no-referrer"
               />
             ) : (
                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
@@ -353,7 +357,7 @@ const CocktailDisplay: React.FC<CocktailDisplayProps> = ({ cocktail, onReset, on
         </div>
 
         {/* Action Buttons - Hidden from screenshot via data attribute */}
-        <div data-html2canvas-ignore="true" className="flex flex-col md:flex-row gap-4 mt-8 justify-center items-center">
+        <div data-html2canvas-ignore="true" className="flex flex-col md:flex-row gap-4 mt-8 justify-center items-center flex-wrap">
             {auth.currentUser && !onBack && (
               <button
                   onClick={handleSave}
@@ -375,6 +379,29 @@ const CocktailDisplay: React.FC<CocktailDisplayProps> = ({ cocktail, onReset, on
                   )}
                   <span>
                       {isSaving ? '儲存中...' : isSaved ? '已儲存' : '收藏酒譜'}
+                  </span>
+              </button>
+            )}
+
+            {auth.currentUser && (
+              <button
+                  onClick={() => setShowPublishModal(true)}
+                  disabled={isPublished}
+                  className={`
+                      group relative px-8 py-3 rounded-full font-bold shadow-lg transition-all duration-300 flex items-center gap-2 overflow-hidden active:scale-95
+                      ${isPublished 
+                          ? 'bg-purple-600 text-white cursor-default' 
+                          : 'bg-slate-800 hover:bg-slate-700 text-white border border-white/10 hover:border-white/20'
+                      }
+                  `}
+              >
+                  {isPublished ? (
+                      <Check className="w-5 h-5" />
+                  ) : (
+                      <Globe className="w-5 h-5 group-hover:scale-110 transition-transform text-purple-400" />
+                  )}
+                  <span>
+                      {isPublished ? '已發布至社群' : '發布至社群'}
                   </span>
               </button>
             )}
@@ -421,6 +448,17 @@ const CocktailDisplay: React.FC<CocktailDisplayProps> = ({ cocktail, onReset, on
             ) : null}
         </div>
       </div>
+
+      {showPublishModal && (
+        <PublishModal 
+          cocktail={cocktail} 
+          onClose={() => setShowPublishModal(false)} 
+          onSuccess={() => {
+            setShowPublishModal(false);
+            setIsPublished(true);
+          }} 
+        />
+      )}
     </>
   );
 };

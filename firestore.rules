@@ -73,14 +73,19 @@ service cloud.firestore {
     // Domain Validators
     // ===============================================================
     function isValidUserProfile() {
-      return hasOnlyAllowedFields(['uid', 'email', 'createdAt']) &&
+      return hasOnlyAllowedFields(['uid', 'email', 'createdAt', 'displayName', 'photoUrl', 'city', 'country', 'updatedAt']) &&
              request.resource.data.uid is string && request.resource.data.uid.size() > 0 && request.resource.data.uid.size() < 100 &&
              isValidEmail(request.resource.data.email) &&
-             request.resource.data.createdAt is timestamp;
+             request.resource.data.createdAt is timestamp &&
+             (!('displayName' in request.resource.data) || (request.resource.data.displayName is string && request.resource.data.displayName.size() <= 100)) &&
+             (!('photoUrl' in request.resource.data) || (request.resource.data.photoUrl is string && request.resource.data.photoUrl.size() <= 5000000)) &&
+             (!('city' in request.resource.data) || (request.resource.data.city is string && request.resource.data.city.size() <= 100)) &&
+             (!('country' in request.resource.data) || (request.resource.data.country is string && request.resource.data.country.size() <= 100)) &&
+             (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp);
     }
 
     function isValidCocktail() {
-      return hasOnlyAllowedFields(['uid', 'name', 'description', 'ingredients', 'instructions', 'glassware', 'garnish', 'visualPrompt', 'imageUrl', 'createdAt']) &&
+      return hasOnlyAllowedFields(['uid', 'name', 'description', 'ingredients', 'instructions', 'glassware', 'garnish', 'visualPrompt', 'imageUrl', 'createdAt', 'updatedAt']) &&
              request.resource.data.uid is string && request.resource.data.uid.size() > 0 && request.resource.data.uid.size() < 100 &&
              request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() < 100 &&
              request.resource.data.description is string && request.resource.data.description.size() > 0 && request.resource.data.description.size() < 1000 &&
@@ -88,9 +93,45 @@ service cloud.firestore {
              isValidList(request.resource.data.instructions, 50) &&
              request.resource.data.glassware is string && request.resource.data.glassware.size() < 200 &&
              request.resource.data.garnish is string && request.resource.data.garnish.size() < 200 &&
-             request.resource.data.visualPrompt is string && request.resource.data.visualPrompt.size() > 0 && request.resource.data.visualPrompt.size() < 1000 &&
+             request.resource.data.visualPrompt is string && request.resource.data.visualPrompt.size() >= 0 && request.resource.data.visualPrompt.size() < 1000 &&
              request.resource.data.imageUrl is string && request.resource.data.imageUrl.size() < 5000000 &&
+             (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp) &&
              request.resource.data.createdAt is timestamp;
+    }
+
+    function isValidCommunityRecipe() {
+      return hasOnlyAllowedFields(['uid', 'authorName', 'authorPhoto', 'authorCity', 'authorCountry', 'name', 'description', 'ingredients', 'instructions', 'glassware', 'garnish', 'visualPrompt', 'imageUrl', 'averageRating', 'reviewCount', 'createdAt', 'updatedAt', 'notes']) &&
+             request.resource.data.uid is string && request.resource.data.uid.size() > 0 && request.resource.data.uid.size() < 100 &&
+             request.resource.data.authorName is string && request.resource.data.authorName.size() <= 100 &&
+             request.resource.data.authorPhoto is string && request.resource.data.authorPhoto.size() <= 5000000 &&
+             (!('authorCity' in request.resource.data) || (request.resource.data.authorCity is string && request.resource.data.authorCity.size() <= 100)) &&
+             (!('authorCountry' in request.resource.data) || (request.resource.data.authorCountry is string && request.resource.data.authorCountry.size() <= 100)) &&
+             request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() < 100 &&
+             request.resource.data.description is string && request.resource.data.description.size() > 0 && request.resource.data.description.size() < 1000 &&
+             isValidList(request.resource.data.ingredients, 50) &&
+             isValidList(request.resource.data.instructions, 50) &&
+             request.resource.data.glassware is string && request.resource.data.glassware.size() < 200 &&
+             request.resource.data.garnish is string && request.resource.data.garnish.size() < 200 &&
+             request.resource.data.visualPrompt is string && request.resource.data.visualPrompt.size() <= 1000 &&
+             request.resource.data.imageUrl is string && request.resource.data.imageUrl.size() < 5000000 &&
+             request.resource.data.averageRating is number && request.resource.data.averageRating >= 0 && request.resource.data.averageRating <= 5 &&
+             request.resource.data.reviewCount is number && request.resource.data.reviewCount >= 0 &&
+             (!('notes' in request.resource.data) || (request.resource.data.notes is string && request.resource.data.notes.size() <= 2000)) &&
+             (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp) &&
+             request.resource.data.createdAt is timestamp;
+    }
+
+    function isValidReview() {
+      return hasOnlyAllowedFields(['uid', 'authorName', 'authorPhoto', 'authorCity', 'authorCountry', 'rating', 'comment', 'createdAt', 'updatedAt']) &&
+             request.resource.data.uid is string && request.resource.data.uid == request.auth.uid &&
+             request.resource.data.authorName is string && request.resource.data.authorName.size() <= 100 &&
+             request.resource.data.authorPhoto is string && request.resource.data.authorPhoto.size() <= 5000000 &&
+             (!('authorCity' in request.resource.data) || (request.resource.data.authorCity is string && request.resource.data.authorCity.size() <= 100)) &&
+             (!('authorCountry' in request.resource.data) || (request.resource.data.authorCountry is string && request.resource.data.authorCountry.size() <= 100)) &&
+             request.resource.data.rating is number && request.resource.data.rating >= 1 && request.resource.data.rating <= 5 &&
+             request.resource.data.comment is string && request.resource.data.comment.size() <= 1000 &&
+             request.resource.data.createdAt is timestamp &&
+             request.resource.data.updatedAt is timestamp;
     }
 
     // ===============================================================
@@ -106,6 +147,29 @@ service cloud.firestore {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId) && isValidCocktail() && uidUnchanged();
         allow update: if isOwner(userId) && isValidCocktail() && uidNotModified() && request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if isOwner(userId);
+      }
+    }
+
+    match /community_recipes/{recipeId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && isValidCommunityRecipe() && uidUnchanged();
+      allow update: if isAuthenticated() && 
+                    (
+                      (isOwner(resource.data.uid) && isValidCommunityRecipe() && uidNotModified() && request.resource.data.createdAt == resource.data.createdAt) ||
+                      (
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['averageRating', 'reviewCount']) &&
+                        request.resource.data.averageRating is number && request.resource.data.averageRating >= 0 && request.resource.data.averageRating <= 5 &&
+                        request.resource.data.reviewCount is number && request.resource.data.reviewCount >= 0 &&
+                        math.abs(request.resource.data.reviewCount - resource.data.reviewCount) <= 1
+                      )
+                    );
+      allow delete: if isOwner(resource.data.uid);
+
+      match /reviews/{userId} {
+        allow read: if true;
+        allow create: if isOwner(userId) && isValidReview() && uidUnchanged();
+        allow update: if isOwner(userId) && isValidReview() && uidNotModified() && request.resource.data.createdAt == resource.data.createdAt;
         allow delete: if isOwner(userId);
       }
     }

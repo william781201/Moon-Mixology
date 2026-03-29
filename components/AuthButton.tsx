@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { auth, db } from '../firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
-import { LogIn, LogOut, Loader2 } from 'lucide-react';
+import { LogIn, LogOut, Loader2, User as UserIcon } from 'lucide-react';
+import { ProfileModal } from './ProfileModal';
 
 enum OperationType {
   CREATE = 'create',
@@ -58,6 +59,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 export const AuthButton: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -73,6 +75,8 @@ export const AuthButton: React.FC = () => {
             await setDoc(userDocRef, {
               uid: currentUser.uid,
               email: currentUser.email,
+              displayName: currentUser.displayName || '',
+              photoUrl: currentUser.photoURL || '',
               createdAt: serverTimestamp()
             });
           }
@@ -112,16 +116,26 @@ export const AuthButton: React.FC = () => {
 
   if (user) {
     return (
-      <div className="flex items-center space-x-4">
-        <span className="text-sm text-slate-400 hidden sm:inline-block">{user.email}</span>
-        <button 
-          onClick={handleLogout}
-          className="flex items-center px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-sm text-slate-300 transition-colors"
-        >
-          <LogOut className="w-4 h-4 mr-2" />
-          登出
-        </button>
-      </div>
+      <>
+        <div className="flex items-center space-x-2 sm:space-x-4">
+          <span className="text-sm text-slate-400 hidden sm:inline-block">{user.email}</span>
+          <button 
+            onClick={() => setShowProfileModal(true)}
+            className="flex items-center px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-sm text-slate-300 transition-colors"
+          >
+            <UserIcon className="w-4 h-4 mr-2" />
+            個人資料
+          </button>
+          <button 
+            onClick={handleLogout}
+            className="flex items-center px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-sm text-slate-300 transition-colors"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            登出
+          </button>
+        </div>
+        {showProfileModal && <ProfileModal onClose={() => setShowProfileModal(false)} />}
+      </>
     );
   }
 

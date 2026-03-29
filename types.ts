@@ -18,6 +18,44 @@ export interface SavedCocktail extends GeneratedCocktail {
   createdAt: number;
 }
 
+export interface UserProfile {
+  uid: string;
+  email: string;
+  displayName?: string;
+  photoUrl?: string;
+  city?: string;
+  country?: string;
+  createdAt: any;
+  updatedAt?: any;
+}
+
+export interface CommunityRecipe extends GeneratedCocktail {
+  id: string;
+  uid: string;
+  authorName: string;
+  authorPhoto: string;
+  authorCity?: string;
+  authorCountry?: string;
+  averageRating: number;
+  reviewCount: number;
+  createdAt: any;
+  updatedAt?: any;
+  notes?: string;
+}
+
+export interface Review {
+  id: string;
+  uid: string;
+  authorName: string;
+  authorPhoto: string;
+  authorCity?: string;
+  authorCountry?: string;
+  rating: number;
+  comment: string;
+  createdAt: any;
+  updatedAt: any;
+}
+
 export interface UserSelections {
   ingredients: string[];
   mood: string;

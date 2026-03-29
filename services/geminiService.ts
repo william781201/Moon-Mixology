@@ -73,11 +73,16 @@ export const generateCocktailImage = async (visualPrompt: string, styleId?: stri
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
+      model: 'gemini-3.1-flash-image-preview',
       contents: {
         parts: [{ text: `${visualPrompt}. ${styleModifier}` }],
       },
-      config: { imageConfig: { aspectRatio: "1:1" } }
+      config: { 
+        imageConfig: { 
+          aspectRatio: "1:1",
+          imageSize: "512px"
+        } 
+      }
     });
 
     for (const part of response.candidates?.[0]?.content?.parts || []) {
