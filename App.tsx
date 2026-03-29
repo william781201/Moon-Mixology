@@ -8,6 +8,7 @@ import LoadingScreen from './components/LoadingScreen';
 import { AuthButton } from './components/AuthButton';
 import { Gallery } from './components/Gallery';
 import { CommunityFeed } from './components/CommunityFeed';
+import { NotificationListener } from './components/NotificationListener';
 import { Martini, Sparkles, BookOpen, Users, Key } from 'lucide-react';
 import { auth, db } from './firebase';
 import { doc, getDocFromServer } from 'firebase/firestore';
@@ -120,6 +121,10 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-100 selection:bg-pink-500/30 overflow-x-hidden">
+      <div className="fixed top-4 left-4 text-[10px] text-slate-600 font-mono z-[100]">
+        {APP_VERSION}
+      </div>
+      <NotificationListener />
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-pink-900/10 blur-[150px] rounded-full"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-cyan-900/10 blur-[150px] rounded-full"></div>
@@ -199,10 +204,6 @@ const App: React.FC = () => {
         )}
         {activeTab === 'gallery' && <Gallery />}
         {activeTab === 'community' && <CommunityFeed />}
-        
-        <div className="fixed bottom-4 left-4 text-[10px] text-slate-600">
-          {APP_VERSION}
-        </div>
       </div>
     </div>
   );

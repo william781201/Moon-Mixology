@@ -134,6 +134,17 @@ service cloud.firestore {
              request.resource.data.updatedAt is timestamp;
     }
 
+    function isValidNotification() {
+      return hasOnlyAllowedFields(['type', 'recipeId', 'recipeName', 'reviewerName', 'rating', 'createdAt', 'read']) &&
+             request.resource.data.type is string && request.resource.data.type.size() <= 50 &&
+             request.resource.data.recipeId is string && request.resource.data.recipeId.size() <= 100 &&
+             request.resource.data.recipeName is string && request.resource.data.recipeName.size() <= 100 &&
+             request.resource.data.reviewerName is string && request.resource.data.reviewerName.size() <= 100 &&
+             request.resource.data.rating is number && request.resource.data.rating >= 1 && request.resource.data.rating <= 5 &&
+             request.resource.data.createdAt is timestamp &&
+             request.resource.data.read is bool;
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -147,6 +158,13 @@ service cloud.firestore {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId) && isValidCocktail() && uidUnchanged();
         allow update: if isOwner(userId) && isValidCocktail() && uidNotModified() && request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if isOwner(userId);
+      }
+
+      match /notifications/{notificationId} {
+        allow read: if isOwner(userId);
+        allow create: if isAuthenticated() && isValidNotification();
+        allow update: if isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']) && request.resource.data.read is bool;
         allow delete: if isOwner(userId);
       }
     }

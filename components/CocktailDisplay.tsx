@@ -278,11 +278,11 @@ const CocktailDisplay: React.FC<CocktailDisplayProps> = ({ cocktail, onReset, on
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-90" />
             
-            <div className="absolute bottom-0 left-0 p-8 w-full">
-              <h1 className="text-4xl md:text-6xl font-bold text-white mb-2 serif text-transparent bg-clip-text bg-gradient-to-r from-pink-200 via-purple-200 to-cyan-200">
+            <div className="absolute bottom-0 left-0 p-6 w-full bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent md:p-8 md:bg-none md:bg-gradient-to-t md:from-slate-900 md:via-transparent md:to-transparent">
+              <h1 className="text-[22px] md:text-6xl font-bold text-white mb-1 md:mb-2 serif text-transparent bg-clip-text bg-gradient-to-r from-pink-200 via-purple-200 to-cyan-200">
                 {cocktail.name}
               </h1>
-              <p className="text-lg md:text-xl text-slate-300 italic max-w-2xl font-light">
+              <p className="text-[14px] md:text-xl text-slate-300 text-justify leading-[16px] not-italic max-w-2xl font-light">
                 "{cocktail.description}"
               </p>
             </div>

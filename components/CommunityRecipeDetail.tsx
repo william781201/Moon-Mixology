@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { db, auth } from '../firebase';
-import { doc, collection, query, orderBy, onSnapshot, runTransaction, serverTimestamp, getDoc, deleteDoc } from 'firebase/firestore';
+import { doc, collection, query, orderBy, onSnapshot, runTransaction, serverTimestamp, getDoc, deleteDoc, addDoc } from 'firebase/firestore';
 import { CommunityRecipe, Review } from '../types';
-import { ArrowLeft, Star, Loader2, MessageSquare, Send, Edit3, Clock, Trash2 } from 'lucide-react';
+import { ArrowLeft, Star, Loader2, MessageSquare, Send, Edit3, Clock, Trash2, Bookmark, BookmarkCheck, Share2, Check } from 'lucide-react';
 import { EditRecipeModal } from './EditRecipeModal';
+import html2canvas from 'html2canvas';
 
 enum OperationType {
   CREATE = 'create',
@@ -72,6 +73,10 @@ export const CommunityRecipeDetail: React.FC<Props> = ({ recipe, onBack }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [isShared, setIsShared] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
 
   useEffect(() => {
     const q = query(
@@ -162,6 +167,20 @@ export const CommunityRecipeDetail: React.FC<Props> = ({ recipe, onBack }) => {
           averageRating: newAvg,
           reviewCount: newCount
         });
+
+        // Add notification for the author if it's not their own review
+        if (recipe.uid !== auth.currentUser!.uid) {
+          const notificationRef = doc(collection(db, 'users', recipe.uid, 'notifications'));
+          transaction.set(notificationRef, {
+            type: 'review',
+            recipeId: recipe.id,
+            recipeName: recipe.name,
+            reviewerName: authorName,
+            rating: rating,
+            createdAt: serverTimestamp(),
+            read: false
+          });
+        }
       });
 
     } catch (err) {
@@ -185,10 +204,161 @@ export const CommunityRecipeDetail: React.FC<Props> = ({ recipe, onBack }) => {
     }
   };
 
+  const compressImage = (base64Str: string, maxWidth = 800, quality = 0.7): Promise<string> => {
+    return new Promise((resolve) => {
+      if (!base64Str.startsWith('data:image')) {
+        resolve(base64Str);
+        return;
+      }
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(base64Str);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => resolve(base64Str);
+      img.src = base64Str;
+    });
+  };
+
+  const handleSave = async () => {
+    if (!auth.currentUser || isSaved || isSaving) return;
+    
+    setIsSaving(true);
+    try {
+      let finalImageUrl = recipe.imageUrl || '';
+      if (finalImageUrl) {
+        finalImageUrl = await compressImage(finalImageUrl);
+      }
+
+      await addDoc(collection(db, 'users', auth.currentUser.uid, 'cocktails'), {
+        uid: auth.currentUser.uid,
+        name: recipe.name,
+        description: recipe.description,
+        ingredients: recipe.ingredients,
+        instructions: recipe.instructions,
+        glassware: recipe.glassware,
+        garnish: recipe.garnish,
+        visualPrompt: recipe.visualPrompt || '',
+        imageUrl: finalImageUrl,
+        createdAt: serverTimestamp()
+      });
+      setIsSaved(true);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, `users/${auth.currentUser.uid}/cocktails`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleShare = async () => {
+    if (isShared || isSharing) return;
+    
+    setIsSharing(true);
+    
+    try {
+        const element = document.body;
+        
+        const canvas = await html2canvas(element, {
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#0f172a',
+            logging: false,
+            scale: 2,
+            width: document.documentElement.scrollWidth,
+            height: document.documentElement.scrollHeight,
+            windowWidth: document.documentElement.scrollWidth,
+            windowHeight: document.documentElement.scrollHeight,
+            x: 0,
+            y: 0,
+            scrollX: 0,
+            scrollY: 0,
+            onclone: (clonedDoc) => {
+                const animatedElements = clonedDoc.querySelectorAll('.animate-slide-up, .animate-fade-in, .animate-fade-in-up, .animate-fade-in-down');
+                animatedElements.forEach((el) => {
+                    const element = el as HTMLElement;
+                    element.style.opacity = '1';
+                    element.style.transform = 'none';
+                    element.style.animation = 'none';
+                    element.style.transition = 'none';
+                });
+
+                const bg = clonedDoc.querySelector('.fixed.inset-0');
+                if (bg) {
+                    const bgEl = bg as HTMLElement;
+                    bgEl.style.position = 'absolute';
+                    bgEl.style.height = '100%';
+                    bgEl.style.width = '100%';
+                    bgEl.style.top = '0';
+                    bgEl.style.left = '0';
+                    bgEl.style.zIndex = '-1';
+                }
+            }
+        });
+
+        canvas.toBlob(async (blob) => {
+            if (!blob) {
+                console.error("Blob generation failed");
+                setIsSharing(false);
+                return;
+            }
+
+            try {
+                const item = new ClipboardItem({ 'image/png': blob });
+                await navigator.clipboard.write([item]);
+                
+                setIsShared(true);
+                setTimeout(() => {
+                    setIsShared(false);
+                }, 3000);
+            } catch (err) {
+                console.error("Failed to copy image to clipboard", err);
+                alert("您的瀏覽器不支援自動複製圖片，請手動截圖分享！");
+            } finally {
+                setIsSharing(false);
+            }
+        }, 'image/png');
+
+    } catch (err) {
+        console.error("Screenshot failed", err);
+        alert("截圖失敗，請稍後再試");
+        setIsSharing(false);
+    }
+  };
+
   const isAuthor = auth.currentUser?.uid === recipe.uid;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 animate-fade-in-up">
+    <>
+      {/* Toast Notification - Hidden from screenshot via data attribute */}
+      <div 
+        data-html2canvas-ignore="true"
+        className={`fixed top-6 left-1/2 -translate-x-1/2 z-[100] transition-all duration-500 ease-out transform pointer-events-none ${
+          isShared ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0'
+        }`}
+      >
+        <div className="bg-slate-800/90 backdrop-blur-md border border-emerald-500/30 text-emerald-100 px-6 py-3 rounded-full shadow-2xl flex items-center gap-3">
+          <div className="bg-emerald-500 rounded-full p-1 shadow-lg shadow-emerald-500/20">
+            <Check className="w-3 h-3 text-white stroke-[3]" />
+          </div>
+          <span className="font-medium text-sm tracking-wide">已複製截圖到剪貼簿！</span>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4 py-8 animate-fade-in-up">
       <div className="flex justify-between items-center mb-6">
         <button
           onClick={onBack}
@@ -319,6 +489,57 @@ export const CommunityRecipeDetail: React.FC<Props> = ({ recipe, onBack }) => {
                   </p>
                 </div>
               )}
+
+              {/* Action Buttons */}
+              <div data-html2canvas-ignore="true" className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-white/10">
+                {auth.currentUser && (
+                  <button
+                    onClick={handleSave}
+                    disabled={isSaving || isSaved}
+                    className={`
+                      flex-1 py-3 rounded-xl font-bold shadow-lg transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden active:scale-95
+                      ${isSaved 
+                        ? 'bg-pink-600 text-white cursor-default' 
+                        : 'bg-slate-800 hover:bg-slate-700 text-white border border-white/10 hover:border-white/20'
+                      }
+                    `}
+                  >
+                    {isSaving ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : isSaved ? (
+                      <BookmarkCheck className="w-5 h-5" />
+                    ) : (
+                      <Bookmark className="w-5 h-5" />
+                    )}
+                    <span>
+                      {isSaving ? '儲存中...' : isSaved ? '已儲存' : '保存酒譜'}
+                    </span>
+                  </button>
+                )}
+
+                <button
+                  onClick={handleShare}
+                  disabled={isSharing || isShared}
+                  className={`
+                    flex-1 py-3 rounded-xl font-bold shadow-lg transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden active:scale-95
+                    ${isShared 
+                      ? 'bg-emerald-600 text-white cursor-default' 
+                      : 'bg-slate-800 hover:bg-slate-700 text-white border border-white/10 hover:border-white/20'
+                    }
+                  `}
+                >
+                  {isSharing ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : isShared ? (
+                    <Check className="w-5 h-5 animate-bounce" />
+                  ) : (
+                    <Share2 className="w-5 h-5" />
+                  )}
+                  <span>
+                    {isSharing ? '正在截圖...' : isShared ? '已複製連結' : '分享飲品'}
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -459,5 +680,6 @@ export const CommunityRecipeDetail: React.FC<Props> = ({ recipe, onBack }) => {
         </div>
       )}
     </div>
+    </>
   );
 };
