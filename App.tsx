@@ -11,6 +11,7 @@ import { CommunityFeed } from './components/CommunityFeed';
 import { Martini, Sparkles, BookOpen, Users, Key } from 'lucide-react';
 import { auth, db } from './firebase';
 import { doc, getDocFromServer } from 'firebase/firestore';
+import { APP_VERSION } from './constants';
 
 const App: React.FC = () => {
   const [hasKey, setHasKey] = useState(false);
@@ -153,7 +154,8 @@ const App: React.FC = () => {
               }`}
             >
               <Sparkles className="w-4 h-4 mr-2" />
-              調製新酒
+              <span className="hidden sm:inline">調製新酒</span>
+              <span className="sm:hidden">調製</span>
             </button>
             <button
               onClick={() => setActiveTab('gallery')}
@@ -164,7 +166,8 @@ const App: React.FC = () => {
               }`}
             >
               <BookOpen className="w-4 h-4 mr-2" />
-              我的酒譜
+              <span className="hidden sm:inline">我的酒譜</span>
+              <span className="sm:hidden">酒譜</span>
             </button>
             <button
               onClick={() => setActiveTab('community')}
@@ -175,7 +178,8 @@ const App: React.FC = () => {
               }`}
             >
               <Users className="w-4 h-4 mr-2" />
-              社群大廳
+              <span className="hidden sm:inline">社群大廳</span>
+              <span className="sm:hidden">大廳</span>
             </button>
           </div>
         </div>
@@ -195,6 +199,10 @@ const App: React.FC = () => {
         )}
         {activeTab === 'gallery' && <Gallery />}
         {activeTab === 'community' && <CommunityFeed />}
+        
+        <div className="fixed bottom-4 left-4 text-[10px] text-slate-600">
+          {APP_VERSION}
+        </div>
       </div>
     </div>
   );

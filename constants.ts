@@ -62,3 +62,5 @@ export const VISUAL_STYLES: SelectionItem[] = [
   { id: 'dark', label: '暗黑奢華', emoji: '🎩' },
   { id: 'sketch', label: '手繪素描', emoji: '✏️' },
 ];
+
+export const APP_VERSION = "v1.0.3";
